@@ -1,2 +1,6 @@
 *.webp
+
+# Keep example GIFs for README, ignore all others
 *.gif
+!apps/culversfotd/example.gif
+!apps/culversfotd/example-long.gif

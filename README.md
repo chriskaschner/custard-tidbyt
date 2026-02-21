@@ -2,11 +2,14 @@
 
 A Tidbyt community app that displays a 3-day forecast of Culver's Flavor of the Day custard flavors with color-coded ice cream cone icons.
 
+![Flavor forecast example](apps/culversfotd/example.gif)
+
 ## Features
 
 - 3-day flavor forecast with mini ice cream cone icons
 - 29 flavor profiles with unique color-coded scoops, ribbons, and toppings
 - Search for any of 1,000+ Culver's locations via typeahead
+- Scrolling marquee header for long location names
 - Two-tier cache for resilient offline rendering
 - Staggered cone layout optimized for the 64x32 pixel Tidbyt display
 

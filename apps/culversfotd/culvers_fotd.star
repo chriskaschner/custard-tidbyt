@@ -718,10 +718,13 @@ def create_three_day_view(flavors, location_name):
                             render.Box(
                                 width = 64,
                                 height = 6,
-                                child = render.Text(
-                                    content = location_name,
-                                    font = "tom-thumb",
-                                    color = "#FFFFFF",
+                                child = render.Marquee(
+                                    width = 64,
+                                    child = render.Text(
+                                        content = location_name,
+                                        font = "tom-thumb",
+                                        color = "#FFFFFF",
+                                    ),
                                 ),
                             ),
                         ],
