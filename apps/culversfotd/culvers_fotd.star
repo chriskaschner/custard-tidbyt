@@ -854,18 +854,20 @@ def main(config):
             upcoming.append(f)
 
     # Use upcoming flavors if available, otherwise show whatever we have
+    header_name = display_name
     if len(upcoming) > 0:
         display_flavors = upcoming
     elif len(flavors) > 0:
         # All dates are in the past (stale cache) — show last 3 as-is
         display_flavors = flavors
+        header_name = "stale data - {}".format(display_name)
     else:
         display_flavors = DEMO_FLAVORS
 
     # Render three-day view
     return render.Root(
         delay = 75,  # ms between frames (enables marquee animation)
-        child = create_three_day_view(display_flavors, display_name),
+        child = create_three_day_view(display_flavors, header_name),
     )
 
 def get_schema():
