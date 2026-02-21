@@ -1,0 +1,26 @@
+name: Pixlet Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Pixlet
+        run: |
+          curl -LO https://github.com/tidbyt/pixlet/releases/latest/download/pixlet_linux_amd64.tar.gz
+          tar -xzf pixlet_linux_amd64.tar.gz
+          sudo mv pixlet /usr/local/bin/
+          pixlet version
+
+      - name: Check Starlark
+        run: pixlet check apps/culversfotd/culvers_fotd.star
+
+      - name: Render test
+        run: pixlet render apps/culversfotd/culvers_fotd.star
