@@ -864,6 +864,7 @@ def main(config):
 
     # Render three-day view
     return render.Root(
+        delay = 75,  # ms between frames (enables marquee animation)
         child = create_three_day_view(display_flavors, display_name),
     )
 

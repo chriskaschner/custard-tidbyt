@@ -13,9 +13,47 @@ A Tidbyt community app that displays a 3-day forecast of Culver's Flavor of the 
 - Two-tier cache for resilient offline rendering
 - Staggered cone layout optimized for the 64x32 pixel Tidbyt display
 
+## Flavor Name Abbreviations
+
+Flavor names are compressed to fit the 64-pixel display width (max 5 characters per line, 2 lines per column). The display shows the abbreviated name split across two lines separated by `/` below:
+
+| Full Flavor Name | Display |
+|---|---|
+| Andes Mint Avalanche | `Mint / Avlnc` |
+| Butter Pecan | `Buttr / Pecan` |
+| Caramel Cashew | `Crml / Cashw` |
+| Caramel Chocolate Pecan | `Crml / Pecan` |
+| Caramel Fudge Cookie Dough | `Fudge / Dough` |
+| Caramel Peanut Buttercup | `PB / Dove` |
+| Caramel Pecan | `Crml / Pecan` |
+| Caramel Turtle | `Crml / Turtl` |
+| Chocolate Caramel Twist | `Crml / Twist` |
+| Chocolate Covered Strawberry | `Choc / Straw` |
+| Chocolate Heath Crunch | `Heath / Crunc` |
+| Chocolate Volcano | `Choc / Volc` |
+| Crazy for Cookie Dough | `Crazy4 / Dough` |
+| Dark Chocolate Decadence | `Choc / Decad` |
+| Dark Chocolate PB Crunch | `DK PB / Crunc` |
+| Devil's Food Cake | `Devil / Cake` |
+| Double Strawberry | `Dbl / Straw` |
+| Georgia Peach | `GA / Peach` |
+| Mint Cookie | `Mint / Cook` |
+| Mint Explosion | `Mint / Expl` |
+| OREO Cookie Cheesecake | `Oreo / Chees` |
+| OREO Cookie Overload | `Oreo / Cook` |
+| Raspberry Cheesecake | `Rasp / Chees` |
+| Really Reese's | `Reese` |
+| Salted Double Caramel Pecan | `Salt / Pecan` |
+| Snickers Swirl | `Snkrs / Swirl` |
+| Turtle | `Turtl` |
+| Turtle Cheesecake | `Turtl / Chees` |
+| Turtle Dove | `Turtl / Dove` |
+
+Unknown flavors use an abbreviation map + base-noun anchoring to auto-compress (e.g. "Chocolate" -> "Choc", "Caramel" -> "Crml").
+
 ## Setup
 
-Search for "Culver's FOTD" in the Tidbyt mobile app, then use the store selector to pick your nearest Culver's location.
+Search for "Custard FOTD" in the Tidbyt mobile app, then use the store selector to pick your nearest Culver's location.
 
 ## Development
 
