@@ -10,6 +10,7 @@ Data is fetched from the custard-calendar Cloudflare Worker API.
 load("cache.star", "cache")
 load("encoding/json.star", "json")
 load("http.star", "http")
+load("humanize.star", "humanize")
 load("render.star", "render")
 load("schema.star", "schema")
 load("time.star", "time")
@@ -21,12 +22,21 @@ WORKER_BASE = "https://custard-calendar.chris-kaschner.workers.dev"
 DEFAULT_STORE_SLUG = "mt-horeb"
 DEFAULT_STORE_NAME = "Mt. Horeb"
 
-# Demo flavors as absolute last resort (if API is completely down)
-DEMO_FLAVORS = [
-    {"name": "Chocolate Caramel Twist", "date": "2026-01-01"},
-    {"name": "Mint Explosion", "date": "2026-01-02"},
-    {"name": "Turtle Dove", "date": "2026-01-03"},
-]
+# Demo flavor names used as last-resort fallback when API + cache are both unavailable.
+# Dates are computed dynamically in demo_flavors() so they never appear stale.
+DEMO_FLAVOR_NAMES = ["Chocolate Caramel Twist", "Mint Explosion", "Turtle Dove"]
+
+def demo_flavors():
+    """Generate demo flavors with today's date and the next 2 days."""
+    now = time.now()
+    result = []
+    for i in range(len(DEMO_FLAVOR_NAMES)):
+        d = now + time.parse_duration("{}h".format(i * 24))
+        result.append({
+            "name": DEMO_FLAVOR_NAMES[i],
+            "date": d.format("2006-01-02"),
+        })
+    return result
 
 # --- Color palettes (carried over from existing renderer) ---
 
@@ -748,7 +758,12 @@ def fetch_flavors(slug):
     Tier 2: Stale cache key with 1h TTL, re-persisted on every read.
              Since Tidbyt renders every ~15 min, the stale key stays
              alive indefinitely through continuous re-persist.
-    Tier 3: DEMO_FLAVORS hardcoded as absolute last resort.
+    Tier 3: demo_flavors() as absolute last resort.
+
+    Network resilience: http.get() uses ttl_seconds = 3600 (max allowed)
+    so pixlet's built-in HTTP cache can serve stale responses when the
+    network is unreachable, preventing script crashes after the first
+    successful fetch.
     """
     cache_key = "flavors:{}".format(slug)
     stale_key = "flavors_stale:{}".format(slug)
@@ -762,22 +777,37 @@ def fetch_flavors(slug):
         cache.set(stale_key, cached, ttl_seconds = 3600)
         return data
 
-    # Tier 1 miss: Fetch from Worker API
-    url = "{}/api/flavors?slug={}".format(WORKER_BASE, slug)
-    rep = http.get(url, ttl_seconds = 240)
+    # Tier 2: Check stale cache BEFORE making a network call.
+    # If we have stale data, use it and avoid a potentially crashing fetch.
+    stale = cache.get(stale_key)
+    if stale != None:
+        data = json.decode(stale)
+
+        # Re-persist stale to keep it alive
+        cache.set(stale_key, stale, ttl_seconds = 3600)
+
+        # Still attempt a background-style refresh via http.get with max
+        # ttl_seconds. If the HTTP cache has a response, this is instant
+        # and free. If not, it fetches and populates the HTTP cache for
+        # next render cycle. Either way, we already have data to return.
+        url = "{}/api/flavors?slug={}".format(WORKER_BASE, humanize.url_encode(slug))
+        rep = http.get(url, ttl_seconds = 3600)
+        if rep.status_code == 200:
+            mapped = _map_flavor_response(rep.json())
+            encoded = json.encode(mapped)
+            cache.set(cache_key, encoded, ttl_seconds = 43200)
+            cache.set(stale_key, encoded, ttl_seconds = 3600)
+        return data
+
+    # Both caches empty: fetch from Worker API.
+    # ttl_seconds = 3600 (max) means pixlet's HTTP cache will serve a
+    # stale response for up to 1h if the network goes down after a
+    # successful fetch, preventing a script crash.
+    url = "{}/api/flavors?slug={}".format(WORKER_BASE, humanize.url_encode(slug))
+    rep = http.get(url, ttl_seconds = 3600)
 
     if rep.status_code == 200:
-        data = rep.json()
-        flavors = data.get("flavors", [])
-
-        # Map Worker field names to renderer field names
-        # Worker returns "title", renderer expects "name"
-        mapped = []
-        for f in flavors:
-            mapped.append({
-                "name": f.get("title", "Unknown"),
-                "date": f.get("date", ""),
-            })
+        mapped = _map_flavor_response(rep.json())
 
         # Persist to both cache tiers
         encoded = json.encode(mapped)
@@ -786,17 +816,19 @@ def fetch_flavors(slug):
 
         return mapped
 
-    # Tier 2: Fetch failed, try stale cache
-    stale = cache.get(stale_key)
-    if stale != None:
-        data = json.decode(stale)
+    # Tier 3: HTTP error (non-200), return demo flavors
+    return demo_flavors()
 
-        # Re-persist stale to keep it alive
-        cache.set(stale_key, stale, ttl_seconds = 3600)
-        return data
-
-    # Tier 3: Total failure, return demo flavors
-    return DEMO_FLAVORS
+def _map_flavor_response(data):
+    """Map Worker API field names to renderer field names."""
+    flavors = data.get("flavors", [])
+    mapped = []
+    for f in flavors:
+        mapped.append({
+            "name": f.get("title", "Unknown"),
+            "date": f.get("date", ""),
+        })
+    return mapped
 
 # --- Typeahead store search ---
 
@@ -805,8 +837,8 @@ def search_stores(pattern):
     if len(pattern) < 2:
         return []
 
-    url = "{}/api/stores?q={}".format(WORKER_BASE, pattern)
-    rep = http.get(url, ttl_seconds = 86400)  # 24h cache — store list is static
+    url = "{}/api/stores?q={}".format(WORKER_BASE, humanize.url_encode(pattern))
+    rep = http.get(url, ttl_seconds = 3600)  # max allowed; store list is static
 
     if rep.status_code != 200:
         return []
@@ -862,7 +894,7 @@ def main(config):
         display_flavors = flavors
         header_name = "stale data - {}".format(display_name)
     else:
-        display_flavors = DEMO_FLAVORS
+        display_flavors = demo_flavors()
 
     # Render three-day view
     return render.Root(
