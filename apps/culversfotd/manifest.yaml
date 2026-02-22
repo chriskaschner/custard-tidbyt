@@ -1,5 +1,5 @@
 id: culversfotd
 name: Custard FOTD
 summary: Flavor of the Day tracker
-desc: Displays a 3-day forecast of Culver's Flavor of the Day custard flavors with color-coded ice cream cone icons. Search for your nearest Culver's location to see upcoming flavors.
+desc: Displays a 3-day forecast of Flavor of the Day custard flavors with color-coded ice cream cone icons. Supports Culver's, Kopp's, Gille's, Hefner's, Kraverz, and Oscar's with brand-specific header colors.
 author: Chris Kaschner

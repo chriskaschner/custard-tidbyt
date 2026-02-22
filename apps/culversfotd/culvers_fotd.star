@@ -1,10 +1,14 @@
 """
-Culver's Flavor of the Day - Tidbyt Community App
+Custard Flavor of the Day - Tidbyt Community App
 
 Displays a 3-day forecast of Flavor of the Day custard flavors
-for any Culver's location, with color-coded mini ice cream cone icons.
+for any supported store, with color-coded mini ice cream cone icons.
 
-Data is fetched from the custard-calendar Cloudflare Worker API.
+Supports multiple brands: Culver's, Kopp's, Gille's, Hefner's,
+Kraverz, and Oscar's. Brand is auto-detected from the store slug
+and drives header color theming.
+
+Data is fetched from the custard-calendar Cloudflare Worker API (v1).
 """
 
 load("cache.star", "cache")
@@ -15,7 +19,7 @@ load("render.star", "render")
 load("schema.star", "schema")
 load("time.star", "time")
 
-# Worker API base URL
+# Worker API base URL (v1 versioned)
 WORKER_BASE = "https://custard-calendar.chris-kaschner.workers.dev"
 
 # Default store when app is unconfigured
@@ -25,6 +29,32 @@ DEFAULT_STORE_NAME = "Mt. Horeb"
 # Demo flavor names used as last-resort fallback when API + cache are both unavailable.
 # Dates are computed dynamically in demo_flavors() so they never appear stale.
 DEMO_FLAVOR_NAMES = ["Chocolate Caramel Twist", "Mint Explosion", "Turtle Dove"]
+
+# Brand theming — drives header color and title text.
+# text_color provides contrast: dark brands get white text, light brands get black.
+BRAND_CONFIG = {
+    "culvers": {"color": "#003366", "text": "#FFFFFF", "label": "Culver's FOTD"},
+    "kopps": {"color": "#000000", "text": "#FFFFFF", "label": "Kopp's FOTD"},
+    "gilles": {"color": "#EBCC35", "text": "#000000", "label": "Gille's FOTD"},
+    "hefners": {"color": "#93BE46", "text": "#000000", "label": "Hefner's FOTD"},
+    "kraverz": {"color": "#CE742D", "text": "#FFFFFF", "label": "Kraverz FOTD"},
+    "oscars": {"color": "#BC272C", "text": "#FFFFFF", "label": "Oscar's FOTD"},
+    "generic": {"color": "#6B4226", "text": "#FFFFFF", "label": "Custard FOTD"},
+}
+
+def brand_from_slug(slug):
+    """Detect brand from store slug, mirroring server BRAND_REGISTRY patterns."""
+    if slug.startswith("kopps-") or slug == "kopps":
+        return "kopps"
+    elif slug == "gilles":
+        return "gilles"
+    elif slug == "hefners":
+        return "hefners"
+    elif slug == "kraverz":
+        return "kraverz"
+    elif slug.startswith("oscars"):
+        return "oscars"
+    return "culvers"
 
 def demo_flavors():
     """Generate demo flavors with today's date and the next 2 days."""
@@ -647,11 +677,11 @@ def format_flavor_for_display(name, max_chars = 5):
 
 # --- Three-day view layout ---
 
-def create_three_day_view(flavors, location_name):
+def create_three_day_view(flavors, location_name, brand_color = "#003366", text_color = "#FFFFFF"):
     """Create 3-day forecast with mini cones and flavor names.
 
     Pixel budget (32px):
-      y=0-4:  header (5px blue, descent clipped)
+      y=0-4:  header (5px brand color, descent clipped)
       y=5:    gap (1px black)
       y=6-31: content (26px per column)
       y=30:   cone tips / text baselines
@@ -717,14 +747,14 @@ def create_three_day_view(flavors, location_name):
             cross_align = "center",
             expanded = True,
             children = [
-                # Header: 6px tall (full font height), blue only behind y=0-4
-                # y=5 is descent row with no blue = appears black
+                # Header: 6px tall (full font height), brand color behind y=0-4
+                # y=5 is descent row with no color = appears black
                 render.Box(
                     width = 64,
                     height = 6,
                     child = render.Stack(
                         children = [
-                            render.Box(width = 64, height = 5, color = "#003366"),
+                            render.Box(width = 64, height = 5, color = brand_color),
                             render.Box(
                                 width = 64,
                                 height = 6,
@@ -733,7 +763,7 @@ def create_three_day_view(flavors, location_name):
                                     child = render.Text(
                                         content = location_name,
                                         font = "tom-thumb",
-                                        color = "#FFFFFF",
+                                        color = text_color,
                                     ),
                                 ),
                             ),
@@ -790,7 +820,7 @@ def fetch_flavors(slug):
         # ttl_seconds. If the HTTP cache has a response, this is instant
         # and free. If not, it fetches and populates the HTTP cache for
         # next render cycle. Either way, we already have data to return.
-        url = "{}/api/flavors?slug={}".format(WORKER_BASE, humanize.url_encode(slug))
+        url = "{}/api/v1/flavors?slug={}".format(WORKER_BASE, humanize.url_encode(slug))
         rep = http.get(url, ttl_seconds = 3600)
         if rep.status_code == 200:
             mapped = _map_flavor_response(rep.json())
@@ -803,7 +833,7 @@ def fetch_flavors(slug):
     # ttl_seconds = 3600 (max) means pixlet's HTTP cache will serve a
     # stale response for up to 1h if the network goes down after a
     # successful fetch, preventing a script crash.
-    url = "{}/api/flavors?slug={}".format(WORKER_BASE, humanize.url_encode(slug))
+    url = "{}/api/v1/flavors?slug={}".format(WORKER_BASE, humanize.url_encode(slug))
     rep = http.get(url, ttl_seconds = 3600)
 
     if rep.status_code == 200:
@@ -833,11 +863,11 @@ def _map_flavor_response(data):
 # --- Typeahead store search ---
 
 def search_stores(pattern):
-    """Handler for schema.Typeahead — searches Worker API for matching stores."""
+    """Handler for schema.Typeahead — searches Worker API for matching stores across all brands."""
     if len(pattern) < 2:
         return []
 
-    url = "{}/api/stores?q={}".format(WORKER_BASE, humanize.url_encode(pattern))
+    url = "{}/api/v1/stores?q={}".format(WORKER_BASE, humanize.url_encode(pattern))
     rep = http.get(url, ttl_seconds = 3600)  # max allowed; store list is static
 
     if rep.status_code != 200:
@@ -873,6 +903,10 @@ def main(config):
         slug = DEFAULT_STORE_SLUG
         display_name = DEFAULT_STORE_NAME
 
+    # Detect brand from slug and get theme
+    brand_key = brand_from_slug(slug)
+    brand_cfg = BRAND_CONFIG.get(brand_key, BRAND_CONFIG["culvers"])
+
     # Fetch flavor data
     flavors = fetch_flavors(slug)
 
@@ -896,10 +930,10 @@ def main(config):
     else:
         display_flavors = demo_flavors()
 
-    # Render three-day view
+    # Render three-day view with brand-specific header
     return render.Root(
         delay = 75,  # ms between frames (enables marquee animation)
-        child = create_three_day_view(display_flavors, header_name),
+        child = create_three_day_view(display_flavors, header_name, brand_cfg["color"], brand_cfg["text"]),
     )
 
 def get_schema():
@@ -909,8 +943,8 @@ def get_schema():
         fields = [
             schema.Typeahead(
                 id = "store",
-                name = "Culver's Location",
-                desc = "Search for your nearest Culver's",
+                name = "Store",
+                desc = "Search for your nearest custard store (Culver's, Kopp's, Gille's, and more)",
                 icon = "magnifyingGlass",
                 handler = search_stores,
             ),
