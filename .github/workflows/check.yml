@@ -24,3 +24,16 @@ jobs:
 
       - name: Render test
         run: pixlet render apps/culversfotd/culvers_fotd.star
+
+  api-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify /api/v1/stores returns store list
+        run: |
+          resp=$(curl -sf "https://custard-calendar.chris-kaschner.workers.dev/api/v1/stores?q=horeb")
+          echo "$resp" | jq -e '.stores | length > 0'
+
+      - name: Verify /api/v1/flavors returns flavor data
+        run: |
+          resp=$(curl -sf "https://custard-calendar.chris-kaschner.workers.dev/api/v1/flavors?slug=mt-horeb")
+          echo "$resp" | jq -e '.flavors'

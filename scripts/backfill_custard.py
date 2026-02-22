@@ -143,7 +143,7 @@ def stage_discover(args: argparse.Namespace) -> int:
     while next_index < len(tokens) and processed < args.tokens_per_run:
         token = tokens[next_index]
         try:
-            payload = get_json("/api/stores", {"q": token}, timeout=args.timeout)
+            payload = get_json("/api/v1/stores", {"q": token}, timeout=args.timeout)
         except (urllib.error.URLError, TimeoutError) as err:
             print(f"discover error token={token}: {err}", file=sys.stderr)
             break
@@ -265,7 +265,7 @@ def backfill_one_store(
 ) -> dict[str, Any]:
     slug = store["slug"]
     seen_at = utc_now()
-    payload = get_json("/api/flavors", {"slug": slug}, timeout=timeout)
+    payload = get_json("/api/v1/flavors", {"slug": slug}, timeout=timeout)
     flavors = payload.get("flavors", [])
 
     upsert_store(conn, store, seen_at)
