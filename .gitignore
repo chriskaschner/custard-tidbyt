@@ -5,3 +5,7 @@
 !apps/culversfotd/example.gif
 !apps/culversfotd/example-short.gif
 !apps/culversfotd/example-long.gif
+
+# Backfill data and runtime artifacts
+data/
+__pycache__/
