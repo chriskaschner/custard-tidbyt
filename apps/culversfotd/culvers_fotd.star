@@ -20,7 +20,7 @@ load("schema.star", "schema")
 load("time.star", "time")
 
 # Worker API base URL (v1 versioned)
-WORKER_BASE = "https://custard-calendar.chris-kaschner.workers.dev"
+WORKER_BASE = "https://custard.chriskaschner.com"
 
 # Default store when app is unconfigured
 DEFAULT_STORE_SLUG = "mt-horeb"
