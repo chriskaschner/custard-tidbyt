@@ -85,6 +85,16 @@ BASE_COLORS = {
     "peach": "#FFE5B4",
     "lemon": "#FFF176",
     "blackberry": "#6B3FA0",
+    "espresso": "#2C1503",
+    "cherry": "#C41E3A",
+    "pumpkin": "#D2691E",
+    "banana": "#F0E68C",
+    "coconut": "#FFFAF0",
+    "root_beer": "#5C3317",
+    "pistachio": "#93C572",
+    "orange": "#FF8C00",
+    "blue_moon": "#5B9BD5",
+    "maple": "#C9882C",
 }
 
 # Ribbon colors (diagonal swirl through scoop)
@@ -119,6 +129,18 @@ TOPPING_COLORS = {
     "blueberry": "#3B1F6B",
     "pie_crust": "#C99E76",
     "blackberry_drupe": "#AEA1BB",
+    "chocolate_chip": "#3B2314",
+    "sprinkles": "#D63384",
+    "graham_cracker": "#8B6914",
+    "coconut_flakes": "#F5F5DC",
+    "cherry_bits": "#8B0000",
+    "caramel_chips": "#9E6B23",
+    "pretzel": "#B07D3B",
+    "pumpkin_spice": "#6B3410",
+    "marshmallow_bits": "#FFFAED",
+    "candy_cane": "#B91C35",
+    "cookie_crumbs": "#7B5B32",
+    "fudge_bits": "#1C0B00",
 }
 
 # Flavor profiles: lowercase name -> {base, ribbon, toppings, density}
